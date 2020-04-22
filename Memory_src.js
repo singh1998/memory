@@ -57,13 +57,13 @@ function vulSpeelveld(size){
 	// moet een karakter toegewezen worden. Hiervoor kan de nextletter functie
 	// gebruikt worden. Ook moet de eventlistener cardClicked aan de cell gekoppeld worden
 	// en de opmaak juist gezet worden.
-
+	const pick_letter=nextLetter(size);
 	for (let i=0;i<size;i++){
 		const tr=document.createElement("tr");
 
 		for (let j=0;j<size;j++){
 			const td=document.createElement("td");
-			td.setAttribute("val",nextLetter(size)());
+			td.setAttribute("val",pick_letter());
 			td.style.backgroundColor="#"+document.getElementById("valueinactive").getAttribute("value");
 			td.innerHTML=karakter;
 			console.log(td.getAttribute("val"));
@@ -141,7 +141,7 @@ function turnCard(card){
 	// Draai de kaart om. Dit kan alleen als de kaart nog niet geopend of gevonden is.
 	// Geef ook aan hoeveel kaarten er nu zijn omgedraaid en return dit zodat in de 
 	// cardClicked functie de checkKaarten functie kan worden aangeroepen als dat nodig is.
-
+	card.innerHTML=card.getAttribute("val");
 }
 
 function deactivateCards() { 
