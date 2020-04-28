@@ -15,6 +15,8 @@ var numberOfCards;
 // Aantal kaarten op het bord
 var numberOfCardsLeft;
 // Aantal kaarten dat nog op het bord ligt
+var beginwidth;
+//begingrootte van balk
 var topScores = [
                  {name:"Barack Obama", time:200},
                  {name:"Bernie Sanders", time:300},
@@ -28,8 +30,9 @@ function initGame(size) {
 	initVars(size);
 	vulSpeelveld(size);
 	showScores();
-
+	resetBar();
 }
+
 
 function initVars(size){
 
@@ -64,12 +67,21 @@ function vulSpeelveld(size){
 		for (let j=0;j<size;j++){
 			const td=document.createElement("td");
 			td.setAttribute("val",pick_letter());
-			td.style.backgroundColor="#"+document.getElementById("valueinactive").getAttribute("value");
-			td.innerHTML=karakter;
-			console.log(td.getAttribute("val"));
+			td.setAttribute("id","inactive");
+			toggleCard(td);
+			
+			
+			
 			td.onclick=function () {
 				cardClicked(td);
 			};
+			td.onmouseover=function(){
+				if(td.getAttribute("id")!="inactive"){
+					td.style.cursor="default";
+				} else{
+					td.style.cursor="pointer";
+				}
+			}
 			tr.appendChild(td);
 		}
 		document.getElementById("speelveld").appendChild(tr);
@@ -79,7 +91,20 @@ function vulSpeelveld(size){
 }
 
 function showScores(){
+	//remove scores from screen
+	const el=document.getElementById("topscores");
+	let child=el.lastElementChild;
+	while (child){
+		el.removeChild(child);
+		child=el.lastElementChild;
+	}
 	// Vul het topscore lijstje op het scherm.
+	for(const score of topScores){
+		const li=document.createElement("li");
+		li.innerHTML=`naam: ${score.name},  tijd: ${score.time}s`;
+		el.appendChild(li);
+	}
+	
 }
 
 function setTijden(){
@@ -87,8 +112,10 @@ function setTijden(){
 	// de huidige speeltijd en de gemiddelde tijd en vul de elementen in de HTML.
 		if(startTijd!=0) {
 			document.getElementById("tijd").innerHTML = Math.floor(getSeconds() - startTijd);
+			document.getElementById("gemiddeld").innerHTML=getAverage()+"s (+"+ getAddedAverage()+"s)";
 		} else {
 			document.getElementById("tijd").innerHTML=0;
+			document.getElementById("gemiddeld").innerHTML=getAverage()+"s (+0s)";
 		}
 	// Vul ook het aantal gevonden kaarten
 
@@ -100,7 +127,13 @@ function getSeconds(){
 	// op te halen. Altijd handig.
 	return Date.now()/1000;
 }
-
+function resetBar(){
+	//functie om de balk te vullen boven het spel
+	document.getElementById("timeLeft").style.width=beginwidth+"px";
+		if(intervalID !=undefined){
+		clearInterval(intervalID);
+	}
+}
 var nextLetter = function(size){
 	var letterArray = "AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPPQQRRSSTTUUVVWWXXYYZZ".substring(0,size*size).split('');
 	var idx=0;
@@ -112,12 +145,13 @@ var nextLetter = function(size){
 } 
 
 function cardClicked(card) {
-	console.log("click");
+	if(card.getAttribute("id")=="inactive"){
 	checkStarttijd();
 	checkDerdeKaart();
 	var draaiKaartOm = turnCard(card);
 	if (draaiKaartOm==2){
 		checkKaarten();
+		}
 	}
 }
 
@@ -134,23 +168,54 @@ function checkStarttijd(){
 function checkDerdeKaart(){
 	// Controleer of het de derde kaart is die wordt aangeklikt.
 	// Als dit zo is kunnen de geopende kaarten gedeactiveerd (gesloten) worden.
+	if(firstCard!=undefined && secondCard != undefined){
+		deactivateCards();
+		resetBar();
+		
+	}
 }
 
 function turnCard(card){
-
+	
 	// Draai de kaart om. Dit kan alleen als de kaart nog niet geopend of gevonden is.
 	// Geef ook aan hoeveel kaarten er nu zijn omgedraaid en return dit zodat in de 
 	// cardClicked functie de checkKaarten functie kan worden aangeroepen als dat nodig is.
-	card.innerHTML=card.getAttribute("val");
+	
+	toggleCard(card);
+	if(firstCard==undefined){
+		firstCard=card;
+		return 1;
+	} 
+	else if(secondCard==undefined){
+		secondCard=card;
+		return 2;
+	}
+	
 }
 
 function deactivateCards() { 
 	// Functie om de twee omgedraaide kaarten weer terug te draaien
+	toggleCard(firstCard);
+	toggleCard(secondCard);
+	
+	firstCard=undefined;
+	secondCard=undefined;
 }
 
 function toggleCard(element) {
 	// Draai de kaart om, als de letter getoond wordt, toon dan de achterkant en 
 	// vice versa. switch dus van active naar inactive of omgekeerd.
+	if(element.innerHTML==karakter){
+		element.innerHTML=element.getAttribute("val");
+		element.style.backgroundColor="#"+document.getElementById("valueactive").getAttribute("value");
+		element.setAttribute("id","active");
+		
+	} else {
+		element.innerHTML=karakter;
+		element.style.backgroundColor="#"+document.getElementById("valueinactive").getAttribute("value");
+		element.setAttribute("id","inactive");
+	}
+	
 }
 
 function checkKaarten(){
@@ -160,6 +225,30 @@ function checkKaarten(){
 	// zijn nu found.
 	// Als de kaarten niet gelijk zijn moet de timer gaan lopen van de toontijd, en 
 	// de timeleft geanimeerd worden zodat deze laat zien hoeveel tijd er nog is.
+	if(firstCard.getAttribute("val")==secondCard.getAttribute("val")){
+		numberOfCardsLeft-=2;
+		firstCard.style.backgroundColor="#"+document.getElementById("valuefound").getAttribute("value");
+		secondCard.style.backgroundColor="#"+document.getElementById("valuefound").getAttribute("value");
+		document.getElementById("gevonden").innerHTML=(numberOfCards-numberOfCardsLeft)/2;
+		firstCard=undefined;
+		secondCard=undefined;
+	} else{
+	const seconds=5;
+	
+	
+	let count=seconds;
+	intervalID=setInterval(function(){
+		const currentwidth=document.getElementById("timeLeft").offsetWidth;
+		document.getElementById("timeLeft").style.width=(currentwidth-(beginwidth/seconds))+"px";
+		count--;
+		if(count==0){
+			resetBar();
+			deactivateCards();
+			
+		}
+	},1000);	
+		
+	}
 }
 
 // De functie tijdBijhouden moet elke halve seconde uitgevoerd worden om te controleren of 
@@ -179,13 +268,41 @@ function tijdBijhouden(){
 function endGame(){
 	// Bepaal de speeltijd, chekc topscores en doe de overige
 	// administratie.
-	const speeltijd=getSeconds()-startTijd;
-	//remove click event
-
+	const speeltijd=Math.floor(getSeconds()-startTijd);
+	totaalTijd+=speeltijd;
+	aantalTijden+=1;
+    document.getElementById("gemiddeld").innerHTML=getAverage()+"s (+0s)";
+	updateTopScores(speeltijd);
+	showScores();
 }
-
+function getAverage(){
+	if (aantalTijden==0){
+		return 0;
+	} else{
+		return Math.floor(totaalTijd/aantalTijden);
+	}
+}
+function getAddedAverage(){
+	if(aantalTijden==0){
+		return Math.floor(getSeconds() - startTijd);
+	} else{
+		return Math.floor(((getSeconds() - startTijd)+totaalTijd)/(aantalTijden+1));
+		
+		
+	}
+}
 function updateTopScores(speelTijd){
 	// Voeg de aangeleverde speeltijd toe aal de lijst met topscores
+		// Vul het topscore lijstje op het scherm.
+		let name=prompt("You have won! Please enter your name");
+	for(const score of topScores){
+		if(speelTijd<score.time){
+			score.name=name;
+			score.time=speelTijd;
+			break;
+		}
+	}
+	
 }
 
 // Deze functie ververst de kleuren van de kaarten van het type dat wordt meegegeven.
@@ -217,5 +334,6 @@ $(document).ready(function(){
         initGame($("#size").val());
     });
 });
+
 
 
